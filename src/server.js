@@ -47,8 +47,14 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const port = process.env.PORT || 3000;
 
+// Reemplazar __SERVICE_URL__ con la URL pública real (o localhost en dev)
+const publicHost = process.env.PUBLIC_URL
+  ? process.env.PUBLIC_URL.replace(/\/$/, '')
+  : `http://localhost:${port}`;
+const resolvedWsdl = wsdlXml.replace('__SERVICE_URL__', `${publicHost}${endpoint}`);
+
 // Initialize SOAP listener
-soap.listen(app, endpoint, service.soapServiceObject, wsdlXml);
+soap.listen(app, endpoint, service.soapServiceObject, resolvedWsdl);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -56,5 +62,5 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);
-  console.log(`WSDL available at http://localhost:${port}${endpoint}?wsdl`);
+  console.log(`WSDL available at ${publicHost}${endpoint}?wsdl`);
 });

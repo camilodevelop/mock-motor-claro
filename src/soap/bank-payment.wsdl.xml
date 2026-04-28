@@ -113,7 +113,7 @@
 
   <service name="BankPaymentManagementService">
     <port name="BankPaymentManagementPort" binding="tns:BankPaymentManagementBinding">
-      <soap:address location="http://localhost:3000/RegisterPayment_Project/Services/Proxy_Pipelines/BankPaymentManagement_PS"/>
+      <soap:address location="__SERVICE_URL__"/>
     </port>
   </service>
 
