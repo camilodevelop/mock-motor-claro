@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bankpayment-soap-mock
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

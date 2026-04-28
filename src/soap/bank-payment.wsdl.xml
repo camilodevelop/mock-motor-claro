@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="BankPaymentManagement"
+             targetNamespace="http://claro.com.co/BankPayment"
+             xmlns:tns="http://claro.com.co/BankPayment"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+    <xsd:schema targetNamespace="http://claro.com.co/BankPayment">
+      <xsd:element name="GetReferenceInformationRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="username" type="xsd:string"/>
+            <xsd:element name="password" type="xsd:string"/>
+            <xsd:element name="bankCode" type="xsd:string"/>
+            <xsd:element name="companyID" type="xsd:int"/>
+            <xsd:element name="paymentReference" type="xsd:string"/>
+            <xsd:element name="receptionDate" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetReferenceInformationResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="isValidReferenceInformation" type="xsd:boolean"/>
+            <xsd:element name="paymentAmount" type="xsd:decimal" minOccurs="0"/>
+            <xsd:element name="errorCode" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="errorMessage" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="RegisterPaymentRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="username" type="xsd:string"/>
+            <xsd:element name="password" type="xsd:string"/>
+            <xsd:element name="bankCode" type="xsd:string"/>
+            <xsd:element name="bankPaymentID" type="xsd:string"/>
+            <xsd:element name="barCode" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="paymentReference" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="companyID" type="xsd:int"/>
+            <xsd:element name="invoice" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="paymentAccountingDate" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="paymentReceptionDate" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="paymentAmount" type="xsd:decimal"/>
+            <xsd:element name="paymentMethod" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="RegisterPaymentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="isValidConfirmation" type="xsd:boolean"/>
+            <xsd:element name="errorCode" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="errorMessage" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="GetReferenceInformationInput">
+    <part name="parameters" element="tns:GetReferenceInformationRequest"/>
+  </message>
+  <message name="GetReferenceInformationOutput">
+    <part name="parameters" element="tns:GetReferenceInformationResponse"/>
+  </message>
+
+  <message name="RegisterPaymentInput">
+    <part name="parameters" element="tns:RegisterPaymentRequest"/>
+  </message>
+  <message name="RegisterPaymentOutput">
+    <part name="parameters" element="tns:RegisterPaymentResponse"/>
+  </message>
+
+  <portType name="BankPaymentManagementPortType">
+    <operation name="GetReferenceInformation">
+      <input message="tns:GetReferenceInformationInput"/>
+      <output message="tns:GetReferenceInformationOutput"/>
+    </operation>
+    <operation name="RegisterPayment">
+      <input message="tns:RegisterPaymentInput"/>
+      <output message="tns:RegisterPaymentOutput"/>
+    </operation>
+  </portType>
+
+  <binding name="BankPaymentManagementBinding" type="tns:BankPaymentManagementPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="GetReferenceInformation">
+      <soap:operation soapAction=""/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="RegisterPayment">
+      <soap:operation soapAction=""/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="BankPaymentManagementService">
+    <port name="BankPaymentManagementPort" binding="tns:BankPaymentManagementBinding">
+      <soap:address location="http://localhost:3000/RegisterPayment_Project/Services/Proxy_Pipelines/BankPaymentManagement_PS"/>
+    </port>
+  </service>
+
+</definitions>

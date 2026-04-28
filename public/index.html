@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BankPayment SOAP Mock - Cliente de ejemplo</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; max-width: 720px; margin: 24px auto; }
+    label { display:block; margin-top:12px }
+    input, select, button { padding:8px; font-size:14px }
+    #result { margin-top:12px; padding:12px; border:1px solid #ddd; background:#f9f9f9 }
+  </style>
+</head>
+<body>
+  <h2>BankPayment SOAP Mock — Cliente de ejemplo</h2>
+  <form id="frm" onsubmit="return false;">
+    <label>Referencia (#):
+      <input id="paymentReference" placeholder="Ingrese referencia" style="width:100%" />
+    </label>
+
+    <label>Tipo:
+      <select id="tipo">
+        <option value="1">Móvil (companyID 1)</option>
+        <option value="2">Hogar (companyID 2)</option>
+      </select>
+    </label>
+
+    <!-- Mock behaviors are configured in src/data/payment.mock.data.js or via POST /__mock/config -->
+
+    <div style="margin-top:12px">
+      <button id="btnCheck">Consultar referencia</button>
+      <button id="btnPay" disabled style="margin-left:8px">Pagar</button>
+    </div>
+  </form>
+
+  <div id="result">Estado: esperando acción</div>
+  <pre id="rawResponse" style="white-space:pre-wrap;margin-top:12px;padding:12px;border:1px solid #eee;background:#fff;max-height:300px;overflow:auto;font-size:13px"></pre>
+
+  <script>
+    const endpoint = '/RegisterPayment_Project/Services/Proxy_Pipelines/BankPaymentManagement_PS';
+    const creds = { username: 'aliado_test', password: 'claro123', bankCode: '013' };
+
+    function buildGetReferenceEnvelope({ username, password, bankCode, companyID, paymentReference, receptionDate }){
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://claro.com.co/BankPayment">\n  <soapenv:Header/>\n  <soapenv:Body>\n    <tns:GetReferenceInformationRequest>\n      <username>${username}</username>\n      <password>${password}</password>\n      <bankCode>${bankCode}</bankCode>\n      <companyID>${companyID}</companyID>\n      <paymentReference>${paymentReference}</paymentReference>\n      <receptionDate>${receptionDate}</receptionDate>\n    </tns:GetReferenceInformationRequest>\n  </soapenv:Body>\n</soapenv:Envelope>`;
+    }
+
+    function buildRegisterPaymentEnvelope(args){
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://claro.com.co/BankPayment">\n  <soapenv:Header/>\n  <soapenv:Body>\n    <tns:RegisterPaymentRequest>\n      <username>${args.username}</username>\n      <password>${args.password}</password>\n      <bankCode>${args.bankCode}</bankCode>\n      <bankPaymentID>${args.bankPaymentID}</bankPaymentID>\n      ${args.barCode ? `<barCode>${args.barCode}</barCode>` : ''}\n      ${args.paymentReference ? `<paymentReference>${args.paymentReference}</paymentReference>` : ''}\n      <companyID>${args.companyID}</companyID>\n      <invoice>${args.invoice || ''}</invoice>\n      <paymentAccountingDate>${args.paymentAccountingDate}</paymentAccountingDate>\n      <paymentReceptionDate>${args.paymentReceptionDate}</paymentReceptionDate>\n      <paymentAmount>${args.paymentAmount}</paymentAmount>\n      <paymentMethod>${args.paymentMethod}</paymentMethod>\n    </tns:RegisterPaymentRequest>\n  </soapenv:Body>\n</soapenv:Envelope>`;
+    }
+
+    async function callSoap(xml){
+      try{
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'text/xml;charset=UTF-8' }, body: xml });
+        const text = await res.text();
+        return { ok: res.ok, status: res.status, text };
+      } catch(err) {
+        return { ok: false, status: 0, text: null, error: err.message };
+      }
+    }
+
+    function parseXml(text){
+      const parser = new DOMParser();
+      return parser.parseFromString(text, 'application/xml');
+    }
+
+    function getText(node, tag){
+      const el = node.getElementsByTagName(tag)[0];
+      return el ? (el.textContent === '' ? null : el.textContent) : null;
+    }
+
+    document.getElementById('btnCheck').addEventListener('click', async () => {
+      const ref = document.getElementById('paymentReference').value.trim();
+      const tipo = document.getElementById('tipo').value;
+      const companyID = tipo;
+      document.getElementById('result').textContent = 'Consultando...';
+
+      // Mock behaviors are configured server-side; client does not set them
+
+      const xml = buildGetReferenceEnvelope({ ...creds, companyID, paymentReference: ref, receptionDate: new Date().toISOString() });
+      try{
+        const resp = await callSoap(xml);
+        document.getElementById('rawResponse').textContent = resp.text || String(resp.error || '');
+        const doc = resp.text ? parseXml(resp.text) : null;
+        const isValid = getText(doc, 'isValidReferenceInformation');
+        const paymentAmount = getText(doc, 'paymentAmount');
+        const errorCode = getText(doc, 'errorCode');
+        const errorMessage = getText(doc, 'errorMessage');
+        if (doc && (isValid === 'true' || isValid === true)) {
+          document.getElementById('result').innerHTML = `Referencia válida. Monto: <b>${paymentAmount}</b>`;
+          document.getElementById('btnPay').disabled = false;
+          // store values
+          document.getElementById('btnPay').dataset.reference = ref;
+          document.getElementById('btnPay').dataset.companyid = companyID;
+          document.getElementById('btnPay').dataset.amount = paymentAmount;
+        } else {
+          const code = errorCode || (resp && resp.status ? String(resp.status) : 'N/A');
+          const msg = errorMessage || (resp && resp.error ? resp.error : 'Respuesta inválida');
+          document.getElementById('result').innerHTML = `Referencia inválida. Código: ${code} - ${msg}`;
+          document.getElementById('btnPay').disabled = true;
+        }
+      } catch (err) {
+        document.getElementById('result').textContent = 'Error en la petición: ' + err.message;
+        document.getElementById('btnPay').disabled = true;
+      }
+    });
+
+    document.getElementById('btnPay').addEventListener('click', async () => {
+      const ref = document.getElementById('btnPay').dataset.reference;
+      const companyID = document.getElementById('btnPay').dataset.companyid;
+      const amount = document.getElementById('btnPay').dataset.amount;
+      if (!ref) return alert('Primero consulte la referencia.');
+
+      const bankPaymentID = 'WEB-' + Date.now();
+      const args = {
+        username: creds.username,
+        password: creds.password,
+        bankCode: creds.bankCode,
+        bankPaymentID,
+        paymentReference: ref,
+        companyID,
+        invoice: 'WEBINV-' + Date.now(),
+        paymentAccountingDate: new Date().toISOString(),
+        paymentReceptionDate: new Date().toISOString(),
+        paymentAmount: amount,
+        paymentMethod: 1
+      };
+
+      document.getElementById('result').textContent = 'Enviando pago...';
+      // Mock behaviors are configured server-side; client does not set them
+
+      const xml = buildRegisterPaymentEnvelope(args);
+      try{
+        const resp = await callSoap(xml);
+        document.getElementById('rawResponse').textContent = resp.text || String(resp.error || '');
+        const doc = resp.text ? parseXml(resp.text) : null;
+        const ok = doc ? getText(doc, 'isValidConfirmation') : null;
+        const errorCode = doc ? getText(doc, 'errorCode') : null;
+        const errorMessage = doc ? getText(doc, 'errorMessage') : null;
+        if (doc && (ok === 'true' || ok === true)) {
+          document.getElementById('result').innerHTML = `Pago registrado correctamente (bankPaymentID: <b>${bankPaymentID}</b>)`;
+          document.getElementById('btnPay').disabled = true;
+        } else {
+          const code = errorCode || (resp && resp.status ? String(resp.status) : 'N/A');
+          const msg = errorMessage || (resp && resp.error ? resp.error : 'Respuesta inválida');
+          document.getElementById('result').innerHTML = `Pago rechazado. Código: ${code} - ${msg}`;
+        }
+      } catch (err) {
+        document.getElementById('result').textContent = 'Error en la petición de pago: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
