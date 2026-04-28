@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions name="BankPaymentManagement"
              targetNamespace="http://claro.com.co/BankPayment"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
              xmlns:tns="http://claro.com.co/BankPayment"
              xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
